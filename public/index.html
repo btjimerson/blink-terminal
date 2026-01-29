@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Blink Terminal</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.0/css/bulma.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
+    <link rel="stylesheet" href="/styles/application.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=JetBrains+Mono&display=swap"
+        rel="stylesheet" />
+    <link rel="icon" href="/images/favicon-64.png" />
+</head>
+
+<body>
+    <section class="hero is-minimal">
+        <div class="hero-body">
+            <div class="container has-text-centered">
+                <figure class="image is-64x64 is-inline-block">
+                    <a href="/"><img src="/images/blink.png" alt="Blink Terminal" class="hero-icon" />
+                </figure>
+                <h1 class="title is-3 mt-4 has-text-white"">
+                    Blink Terminal
+                </h1>
+                <p class=" subtitle is-6 has-text-grey-light subtitle-spacing"
+                    style="opacity: 0.9; margin-top: 1.5rem;">
+                    Because <code>kubectl exec</code> is too many syllables.
+                    </p>
+            </div>
+        </div>
+    </section>
+    <section class="section">
+        <div class="container">
+            <div class="columns is-centered">
+                <div class="column is-10 is-8-widescreen">
+                    <div class="terminal-window">
+                        <div class="window-header">
+                            <div class="dots">
+                                <div class="dot red"></div>
+                                <div class="dot yellow"></div>
+                                <div class="dot green"></div>
+                            </div>
+                            <div class="window-title" id="windowTitle">remote - zsh - 80x30</div>
+                            <div id="connection-status" class="status-pill is-disconnected">
+                                <span class="status-dot"></span>
+                                <span id="status-text">Disconnected</span>
+                            </div>
+                        </div>
+                        <div id="terminal-container"></div>
+                        <div class="shortcut-bar">
+                            <span class="is-size-7 has-text-grey mr-3">Quick Actions:</span>
+                            <button class="button is-dark is-small" type="button"
+                                onclick="sendCmd(event, 'hostname')">hostname</button>
+                            <button class="button is-dark is-small" type="button"
+                                onclick="sendCmd(event, 'ping -c 6 www.cnn.com')">ping cnn</button>
+                            <button class="button is-dark is-small" type="button" onclick="sendCmd(event, 'env')">env</button>
+                            <button class="button is-dark is-small" type="button"
+                                onclick="sendCmd(event, 'ls -lah')">ls</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+    <script>
+        // Create the terminal
+        const socket = io();
+        const term = new Terminal({
+            cursorBlink: true,
+            fontSize: 14,
+            lineHeight: 1.2,
+            fontFamily: '"Victor Mono", monospace',
+            theme: {
+                background: '#000000',
+                foreground: '#d1d5db',
+                cursor: '#58a6ff',
+                selectionBackground: '334155'
+            },
+            convertEol: true
+        });
+
+        // Set the title for the terminal
+        const windowTitle = document.getElementById('windowTitle');
+        socket.on('metadata', (data) => {
+            // Update the title with the pod name and shell
+            windowTitle.innerText = `${data.podName} - ${data.shell}`;
+        })
+
+        // Open terminal 
+        term.open(document.getElementById('terminal-container'));
+        term.focus();
+
+        // Send keys to server
+        term.onData(data => socket.emit('input', data));
+
+        // Status indicators
+        const statusPill = document.getElementById('connection-status');
+        const statusText = document.getElementById('status-text');
+
+        // Update status on connection
+        socket.on('connect', () => {
+            statusPill.classList.remove('is-disconnected');
+            statusPill.classList.add('is-connected');
+            statusText.innerText = 'Connected';
+        });
+
+        // Update status on disconnection
+        socket.on('disconnect', () => {
+            statusPill.classList.remove('is-connected');
+            statusPill.classList.add('is-disconnected');
+            statusText.innerText = 'Disconnected';
+        });
+
+        // Display output from server
+        socket.on('output', data => term.write(data));
+
+        // Handler for the shortcut menu in the terminal
+        function sendCmd(event, cmd) {
+            // Stop browser refresh
+            if (event) event.preventDefault();
+
+            if (socket && socket.connected) {
+                socket.emit('input', cmd + '\r');
+                term.scrollToBottom();
+                term.focus();
+            }
+        }
+    </script>
+</body>
+
+</html>

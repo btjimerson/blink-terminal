@@ -1,0 +1,44 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: blink
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: blink-terminal
+  labels:
+    app: blink-terminal
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: blink-terminal
+  template:
+    metadata:
+      labels:
+        app: blink-terminal
+    spec:
+      serviceAccountName: blink
+      containers:
+      - name: blink
+        image: ghcr.io/btjimerson/blink-terminal:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: blink-terminal
+  labels:
+    app: blink-terminal
+    service: blink-terminal
+spec:
+  ports:
+  - port: 3000
+    targetPort: 3000
+    name: http
+  selector:
+    app: blink-terminal
