@@ -7,17 +7,45 @@ on:
 
 # Necessary permissions for GHCR
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
     steps:
+
+      # Checkout the latest code base
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 1. Log in to GitHub Container Registry
+      # Get the version from the tag and update package.json.
+      # Sync this change back to the tag that triggered the workflow.
+      - name: Update package.json Version and Sync Tag
+        run: |
+          # Get the tag name (removes 'refs/tags/' and the 'v' prefix if present)
+          VERSION=${GITHUB_REF#refs/tags/}
+          VERSION=${VERSION#v}
+    
+          echo "Updating package.json to version: $VERSION"
+    
+          # Use jq to update the version field in-place
+          jq ".version = \"$VERSION\"" package.json > package.json.tmp && mv package.json.tmp package.json
+
+          # Configure Git commit
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          # Commit and ush change to the branch (e.g., main)
+          git add package.json
+          git commit -m "chore: bump version to $VERSION [skip ci]"
+          git push origin HEAD:${{ github.event.repository.default_branch }}
+          
+          # Force update the tag to point to this new commit
+          git tag -f $GITHUB_REF_NAME
+          git push origin $GITHUB_REF_NAME --force
+
+      # Log in to GHCR
       - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
@@ -25,7 +53,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # 2. Extract Metadata (Tags/Labels)
+      # Extract metadata (tags/labels)
       # This handles the 'latest' and 'v1.2.3' tagging automatically
       - name: Extract Metadata
         id: meta
@@ -36,7 +64,7 @@ jobs:
             type=semver,pattern={{version}}
             type=raw,value=latest
 
-      # 3. Build and Push
+      # Build image and push to GHCR
       - name: Build and Push Image
         uses: docker/build-push-action@v5
         with:

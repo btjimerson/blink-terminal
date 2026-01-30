@@ -1,6 +1,6 @@
 {
   "name": "blink-terminal",
-  "version": "0.0.1",
+  "version": "0.0.0",
   "description": "Terminal application for browser-based access to Kubernetes pods",
   "main": "index.js",
   "scripts": {
