@@ -1,12 +1,15 @@
 {
   "name": "blink-terminal",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Terminal application for browser-based access to Kubernetes pods",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["terminal","kubernetes"],
+  "keywords": [
+    "terminal",
+    "kubernetes"
+  ],
   "author": "Brian Jimerson",
   "license": "Apache-2.0",
   "type": "commonjs",
