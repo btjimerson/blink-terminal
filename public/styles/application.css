@@ -59,13 +59,17 @@ code {
     overflow: hidden;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
     border: 1px solid var(--border-color);
-
+    display: flex;
+    flex-direction: column;
+    height: 60vh;
+    min-height: 600px;
 }
 
 /* The style for the main terminal container
     style: terminal-container */
 #terminal-container {
-    padding: 15px;
+    flex-grow: 1;
+    padding: 10px;
     background: var(--terminal-bg);
 }
 
