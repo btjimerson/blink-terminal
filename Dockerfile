@@ -23,6 +23,8 @@ RUN apt-get update && apt-get install -y \
     traceroute \
     ca-certificates \
     jq \
+    vim \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
 # Install kubectl
